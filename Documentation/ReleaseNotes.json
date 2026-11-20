@@ -5845,6 +5845,10 @@
     "settings-selected-icons": {
       "category": "fixed",
       "message": "Icons in the Settings sidebar turn white on the selected row, so they stay readable in light mode."
+    },
+    "sidebar-texture-reduced-transparency": {
+      "category": "fixed",
+      "message": "Sidebar texture stays visible as fine film grain when Reduce Transparency is on."
     }
   }
 }
