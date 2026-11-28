@@ -6,6 +6,8 @@ import SwiftUI
 /// The shared artwork preserves the crest's original colors and layered badge
 /// in both the compact desktop track and the expanded touch segments.
 struct BrowserSpacePickerIcon: View {
+    private static let slateSymbolColor = BrandColor(red: 66.0 / 255, green: 82.0 / 255, blue: 106.0 / 255)
+
     let space: BrowserSpaceIdentity
     let metrics: BrowserSpacePickerMetrics
     /// The Spaces the switcher shades its dots among, or nil to draw the
@@ -64,10 +66,12 @@ struct BrowserSpacePickerIcon: View {
         if inactiveSymbolTone == .light, whiteMinimum >= minimumContrast {
             return BrandColor(red: 1, green: 1, blue: 1)
         }
-        if inactiveSymbolTone == .dark, blackMinimum >= minimumContrast {
-            return BrandColor(red: 0, green: 0, blue: 0)
+        if (inactiveSymbolTone == .dark && blackMinimum >= minimumContrast) || blackMinimum >= whiteMinimum {
+            let slate = Self.slateSymbolColor
+            return symbolBackgrounds.allSatisfy {
+                slate.color.contrastRatio(over: $0, environment: environment) >= minimumContrast
+            } ? slate : BrandColor(red: 0, green: 0, blue: 0)
         }
-        let level = blackMinimum >= whiteMinimum ? 0.0 : 1.0
-        return BrandColor(red: level, green: level, blue: level)
+        return BrandColor(red: 1, green: 1, blue: 1)
     }
 }
