@@ -72,17 +72,12 @@ struct BrowserSpaceBannerBackground: View {
     }
 
     private var fieldOpacity: Double {
-        effectiveReduceTransparency
-            ? max(branding.bannerStrength, 0.85) : branding.bannerStrength
+        Self.fieldOpacity(branding, reduceTransparency: effectiveReduceTransparency)
     }
 
     private var readabilityOpacity: Double {
-        let configured =
-            effectiveReduceTransparency
-            ? max(branding.readabilityFade, 0.42)
-            : branding.readabilityFade
-        let increasedContrast = effectiveContrast == .increased ? 0.1 : 0
-        return min(configured * 0.55 + increasedContrast, 0.7)
+        Self.readabilityOpacity(
+            branding, reduceTransparency: effectiveReduceTransparency, contrast: effectiveContrast)
     }
 
     private var effectiveReduceTransparency: Bool {
@@ -91,6 +86,34 @@ struct BrowserSpaceBannerBackground: View {
 
     private var effectiveContrast: ColorSchemeContrast {
         previewContrast ?? contrast
+    }
+
+    /// Palette samples under the same base and readability layers as the banner.
+    static func colorSamples(branding: SpaceBranding, environment: EnvironmentValues) -> [BrandColor] {
+        let resolved = CrestColor.windowBackground.resolve(in: environment)
+        let base = BrandColor(
+            clampingRed: Double(resolved.red), green: Double(resolved.green), blue: Double(resolved.blue), alpha: 1)
+        let reduceTransparency = environment.accessibilityReduceTransparency
+        let strength = fieldOpacity(branding, reduceTransparency: reduceTransparency)
+        let fade = readabilityOpacity(
+            branding, reduceTransparency: reduceTransparency, contrast: environment.colorSchemeContrast)
+        let ink = branding.foregroundTone(over: environment.colorScheme) == .dark ? 1.0 : 0.0
+        let overlay = BrandColor(red: ink, green: ink, blue: ink)
+        let colors = branding.paintedColors
+        return (colors.isEmpty ? [SpaceBranding.fallbackColor] : colors).map {
+            overlay.composited(opacity: fade, over: $0.composited(opacity: strength, over: base))
+        }
+    }
+
+    private static func fieldOpacity(_ branding: SpaceBranding, reduceTransparency: Bool) -> Double {
+        reduceTransparency ? max(branding.bannerStrength, 0.85) : branding.bannerStrength
+    }
+
+    private static func readabilityOpacity(
+        _ branding: SpaceBranding, reduceTransparency: Bool, contrast: ColorSchemeContrast
+    ) -> Double {
+        let configured = reduceTransparency ? max(branding.readabilityFade, 0.42) : branding.readabilityFade
+        return min(configured * 0.55 + (contrast == .increased ? 0.1 : 0), 0.7)
     }
 }
 

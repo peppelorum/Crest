@@ -1,0 +1,9 @@
+{
+  "entries": [
+    {
+      "id": "space-switcher-icon-contrast",
+      "category": "fixed",
+      "message": "Space switcher symbols stay readable on light and dark sidebars. Inactive symbols follow the sidebar's colors instead of competing with the active Space. Thanks to Peppe Bergqvist (@peppelorum)."
+    }
+  ]
+}

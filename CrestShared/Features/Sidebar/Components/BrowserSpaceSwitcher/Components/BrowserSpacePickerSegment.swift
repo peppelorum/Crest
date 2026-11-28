@@ -16,16 +16,21 @@ struct BrowserSpacePickerSegment: View {
     var visibleRegion: CGRect? = nil
     /// The Spaces the switcher shades its dots among, or nil to draw crests.
     var dots: BrowserSpaceDot.Field? = nil
+    var symbolBackgrounds: [Color] = []
+    var inactiveSymbolTone: BrowserSpaceForegroundTone? = nil
 
     var body: some View {
-        BrowserSpacePickerIcon(space: space, metrics: metrics, dots: dots)
-            .browserSidebarReorderZone(
-                .space(space.assignment),
-                state: reorderState,
-                visibleRegion: visibleRegion
-            )
-            .accessibilityHint(
-                "Select this Space, or drop a tab to move it here"
-            )
+        BrowserSpacePickerIcon(
+            space: space, metrics: metrics, dots: dots, symbolBackgrounds: symbolBackgrounds,
+            inactiveSymbolTone: inactiveSymbolTone
+        )
+        .browserSidebarReorderZone(
+            .space(space.assignment),
+            state: reorderState,
+            visibleRegion: visibleRegion
+        )
+        .accessibilityHint(
+            "Select this Space, or drop a tab to move it here"
+        )
     }
 }

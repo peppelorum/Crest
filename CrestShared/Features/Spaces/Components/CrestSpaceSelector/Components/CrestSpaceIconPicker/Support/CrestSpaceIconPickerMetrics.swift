@@ -192,6 +192,18 @@ struct CrestSpaceIconPickerTone: Equatable, Sendable {
 
     // MARK: - Functions
 
+    func symbolBackgrounds(
+        over sidebar: [BrandColor], groupTone: CrestSpaceIconPickerTone?, selectorTone: CrestSpaceIconPickerTone?
+    ) -> [Color] {
+        let black = BrandColor(red: 0, green: 0, blue: 0)
+        let white = BrandColor(red: 1, green: 1, blue: 1)
+        return sidebar.map {
+            let wellBackground = black.composited(opacity: well, over: $0)
+            let groupBackground = white.composited(opacity: groupTone?.group ?? 0, over: wellBackground)
+            return white.composited(opacity: selectorTone?.selector ?? 0, over: groupBackground).color
+        }
+    }
+
     /// The tone over a sidebar whose text reads in `scheme`'s colors: dark,
     /// so light text, or light.
     static func over(_ scheme: ColorScheme) -> CrestSpaceIconPickerTone {

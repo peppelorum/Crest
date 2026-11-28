@@ -11,6 +11,10 @@ struct BrowserSpacePickerIcon: View {
     /// The Spaces the switcher shades its dots among, or nil to draw the
     /// Space's crest.
     var dots: BrowserSpaceDot.Field? = nil
+    var symbolBackgrounds: [Color] = []
+    var inactiveSymbolTone: BrowserSpaceForegroundTone? = nil
+
+    @Environment(\.self) private var environment
 
     var body: some View {
         if let dots {
@@ -23,13 +27,47 @@ struct BrowserSpacePickerIcon: View {
             .contentShape(.rect)
             .transition(.opacity)
         } else {
-            BrowserSpaceSymbolArtwork(
-                identity: space,
-                size: metrics.iconSize,
-                lockSize: metrics.lockSize
-            )
-            .padding(metrics.iconPadding)
-            .transition(.opacity)
+            BrowserSpaceSymbolArtwork(identity: readableArtwork, size: metrics.iconSize, lockSize: metrics.lockSize)
+                .padding(metrics.iconPadding)
+                .transition(.opacity)
         }
+    }
+
+    private var readableArtwork: BrowserSpaceIdentity {
+        guard let symbolColor else { return space }
+        var branding = space.branding
+        branding.symbolColor = symbolColor
+        branding.symbolGradient = nil
+        return space.wearing(branding, symbol: space.symbol, name: space.name)
+    }
+
+    private var symbolColor: BrandColor? {
+        guard !symbolBackgrounds.isEmpty,
+            case .symbol(let name) = BrowserSpaceIdentityArtwork(space),
+            BrowserIconSymbol.emoji(from: name) == nil
+        else { return nil }
+        let accent = space.branding.accentFill.colors
+        let minimumContrast = 3.0
+        guard
+            inactiveSymbolTone != nil
+                || accent.contains(where: { color in
+                    symbolBackgrounds.contains {
+                        color.color.contrastRatio(over: $0, environment: environment) < minimumContrast
+                    }
+                })
+        else { return nil }
+
+        // ponytail: checks palette samples, not individual pixels during swipes or over grain.
+        let black = symbolBackgrounds.map { Color.black.contrastRatio(over: $0, environment: environment) }
+        let white = symbolBackgrounds.map { Color.white.contrastRatio(over: $0, environment: environment) }
+        guard let blackMinimum = black.min(), let whiteMinimum = white.min() else { return nil }
+        if inactiveSymbolTone == .light, whiteMinimum >= minimumContrast {
+            return BrandColor(red: 1, green: 1, blue: 1)
+        }
+        if inactiveSymbolTone == .dark, blackMinimum >= minimumContrast {
+            return BrandColor(red: 0, green: 0, blue: 0)
+        }
+        let level = blackMinimum >= whiteMinimum ? 0.0 : 1.0
+        return BrandColor(red: level, green: level, blue: level)
     }
 }

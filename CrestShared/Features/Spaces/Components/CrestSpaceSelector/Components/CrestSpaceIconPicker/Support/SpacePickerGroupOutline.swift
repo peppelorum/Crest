@@ -74,5 +74,5 @@ struct SpacePickerGroupOutline: Equatable {
     /// selected.
     func primary(of index: Int) -> Int { groupOf[index].lowerBound }
 
-    private func isGrouped(_ index: Int) -> Bool { groupOf[index].count > 1 }
+    func isGrouped(_ index: Int) -> Bool { groupOf[index].count > 1 }
 }
