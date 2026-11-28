@@ -168,6 +168,8 @@ struct CrestSpaceIconPickerTone: Equatable, Sendable {
 
     static let onDark = CrestSpaceIconPickerTone(well: 0.22, group: 0.09, selector: 0.22)
     static let onLight = CrestSpaceIconPickerTone(well: 0.07, group: 0.4, selector: 0.85)
+    private static let minimumSymbolContrast = 3.0
+    private static let white = BrandColor(red: 1, green: 1, blue: 1)
 
     // MARK: - Variables
 
@@ -192,11 +194,37 @@ struct CrestSpaceIconPickerTone: Equatable, Sendable {
 
     // MARK: - Functions
 
-    func symbolBackgrounds(
+    func symbolOverride(
+        for space: BrowserSpaceIdentity, over sidebar: [BrandColor], groupTone: CrestSpaceIconPickerTone?,
+        selectorTone: CrestSpaceIconPickerTone?, foreground: BrowserSpaceForegroundTone, environment: EnvironmentValues
+    ) -> BrandColor? {
+        guard !sidebar.isEmpty, case .symbol(let name) = BrowserSpaceIdentityArtwork(space),
+            BrowserIconSymbol.emoji(from: name) == nil
+        else { return nil }
+
+        // Palette samples approximate the surface without sampling grain or moving highlights.
+        let backgrounds = symbolBackgrounds(over: sidebar, groupTone: groupTone, selectorTone: selectorTone)
+        func contrast(_ color: BrandColor) -> Double {
+            backgrounds.map { color.color.contrastRatio(over: $0, environment: environment) }.min() ?? 0
+        }
+        guard space.branding.accentFill.colors.contains(where: { contrast($0) < Self.minimumSymbolContrast })
+        else { return nil }
+
+        let slate = CrestBrandPalette.slateComponents.brandColor
+        let ink = CrestBrandPalette.inkComponents.brandColor
+        let paper = CrestBrandPalette.paperComponents.brandColor
+        let candidates = foreground == .light ? [paper, slate, ink] : [slate, ink, paper]
+        let scores = candidates.map { (color: $0, contrast: contrast($0)) }
+        return
+            (scores.first { $0.contrast >= Self.minimumSymbolContrast }
+            ?? scores.max { $0.contrast < $1.contrast })?.color
+    }
+
+    private func symbolBackgrounds(
         over sidebar: [BrandColor], groupTone: CrestSpaceIconPickerTone?, selectorTone: CrestSpaceIconPickerTone?
     ) -> [Color] {
         let black = BrandColor(red: 0, green: 0, blue: 0)
-        let white = BrandColor(red: 1, green: 1, blue: 1)
+        let white = Self.white
         return sidebar.map {
             let wellBackground = black.composited(opacity: well, over: $0)
             let groupBackground = white.composited(opacity: groupTone?.group ?? 0, over: wellBackground)

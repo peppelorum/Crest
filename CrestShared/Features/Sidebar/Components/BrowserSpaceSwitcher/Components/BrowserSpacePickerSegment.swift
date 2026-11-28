@@ -8,6 +8,8 @@ import SwiftUI
 /// side, the icon picker's button on the other — so the segment registers its
 /// drop zone and otherwise stays out of the way.
 struct BrowserSpacePickerSegment: View {
+    // MARK: - Variables
+
     let space: BrowserSpaceIdentity
     let reorderState: BrowserSidebarReorderState
     let metrics: BrowserSpacePickerMetrics
@@ -16,21 +18,19 @@ struct BrowserSpacePickerSegment: View {
     var visibleRegion: CGRect? = nil
     /// The Spaces the switcher shades its dots among, or nil to draw crests.
     var dots: BrowserSpaceDot.Field? = nil
-    var symbolBackgrounds: [Color] = []
-    var inactiveSymbolTone: BrowserSpaceForegroundTone? = nil
+    var symbolColor: BrandColor? = nil
+
+    // MARK: - Actions - Drawing
 
     var body: some View {
-        BrowserSpacePickerIcon(
-            space: space, metrics: metrics, dots: dots, symbolBackgrounds: symbolBackgrounds,
-            inactiveSymbolTone: inactiveSymbolTone
-        )
-        .browserSidebarReorderZone(
-            .space(space.assignment),
-            state: reorderState,
-            visibleRegion: visibleRegion
-        )
-        .accessibilityHint(
-            "Select this Space, or drop a tab to move it here"
-        )
+        BrowserSpacePickerIcon(space: space, metrics: metrics, dots: dots, symbolColor: symbolColor)
+            .browserSidebarReorderZone(
+                .space(space.assignment),
+                state: reorderState,
+                visibleRegion: visibleRegion
+            )
+            .accessibilityHint(
+                "Select this Space, or drop a tab to move it here"
+            )
     }
 }

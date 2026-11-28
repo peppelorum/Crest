@@ -2,6 +2,8 @@ import SwiftUI
 
 /// A stable-height scroll lane with explicit controls for mouse-only scrolling.
 struct BrowserSpaceSwitcherCompactPicker: View {
+    // MARK: - Variables
+
     let spaces: [BrowserSpaceIdentity]
     let selectedSpaceID: UUID
     var reorderState: BrowserSidebarReorderState? = nil
@@ -23,6 +25,8 @@ struct BrowserSpaceSwitcherCompactPicker: View {
     private var shapedStyle: CrestSpaceIconPickerStyle {
         style.rounded(CGFloat(appearance.sidebarCornerRadius))
     }
+
+    // MARK: - Actions - Drawing
 
     var body: some View {
         ScrollViewReader { reader in
@@ -63,8 +67,7 @@ struct BrowserSpaceSwitcherCompactPicker: View {
                 profiles: Dictionary(spaces.map { ($0.id, $0.profileID) }, uniquingKeysWith: { first, _ in first }),
                 selectedSpaceID: selectedSpaceID) : nil
         let tracksSelection = moveSpace == nil && spacePagerPresentation != nil
-        let (symbolBackgrounds, inactiveTone) =
-            showsDots ? ([:], nil) : symbolAppearance(tracksSelection: tracksSelection)
+        let overrides = showsDots ? [:] : symbolColors(tracksSelection: tracksSelection)
         return ScrollView(.horizontal) {
             CrestSpaceIconPicker(
                 spaces: spaces,
@@ -78,19 +81,14 @@ struct BrowserSpaceSwitcherCompactPicker: View {
                 segmentSize: CGSize(width: segmentWidth, height: style.segmentHeight),
                 drawsSurfaces: !showsDots
             ) { space in
-                let inactiveSymbolTone = space.id == selectedSpaceID ? nil : inactiveTone
                 if let reorderState {
                     BrowserSpacePickerSegment(
                         space: space, reorderState: reorderState, metrics: metrics,
                         visibleRegion: viewport.isEmpty ? nil : viewport, dots: dots,
-                        symbolBackgrounds: symbolBackgrounds[space.id] ?? [], inactiveSymbolTone: inactiveSymbolTone
+                        symbolColor: overrides[space.id]
                     )
                 } else {
-                    BrowserSpacePickerIcon(
-                        space: space, metrics: metrics, dots: dots,
-                        symbolBackgrounds: symbolBackgrounds[space.id] ?? [],
-                        inactiveSymbolTone: inactiveSymbolTone
-                    )
+                    BrowserSpacePickerIcon(space: space, metrics: metrics, dots: dots, symbolColor: overrides[space.id])
                 }
             }
             .frame(minWidth: allocation.scrollViewportWidth, alignment: .center)
@@ -117,8 +115,8 @@ struct BrowserSpaceSwitcherCompactPicker: View {
         }
     }
 
-    private func symbolAppearance(tracksSelection: Bool) -> ([UUID: [Color]], BrowserSpaceForegroundTone?) {
-        guard let selectedIndex = spaces.firstIndex(where: { $0.id == selectedSpaceID }) else { return ([:], nil) }
+    private func symbolColors(tracksSelection: Bool) -> [UUID: BrandColor] {
+        guard let selectedIndex = spaces.firstIndex(where: { $0.id == selectedSpaceID }) else { return [:] }
         let branding = spaces[selectedIndex].branding
         var windowEnvironment = environment
         windowEnvironment.colorScheme = environment.deviceColorScheme ?? environment.colorScheme
@@ -139,14 +137,18 @@ struct BrowserSpaceSwitcherCompactPicker: View {
             tracksSelection && outline.outlinesGroups && outline.isGrouped(selectedIndex)
             ? .over(spaces[primary].branding.colorScheme(over: windowEnvironment.colorScheme)) : nil
 
-        let backgrounds = Dictionary(
-            uniqueKeysWithValues: spaces.enumerated().map { index, space in
+        let foreground = sidebarBranding.foregroundTone(over: windowEnvironment.colorScheme)
+        return Dictionary(
+            uniqueKeysWithValues: spaces.enumerated().compactMap { index, space in
                 let group = outline.primary(of: index) == primary ? groupTone : nil
-                let backgrounds = wellTone.symbolBackgrounds(
-                    over: sidebar, groupTone: group, selectorTone: index == selectedIndex ? selectorTone : nil)
-                return (space.id, backgrounds)
+                guard
+                    let color = wellTone.symbolOverride(
+                        for: space, over: sidebar, groupTone: group,
+                        selectorTone: index == selectedIndex ? selectorTone : nil,
+                        foreground: foreground, environment: environment)
+                else { return nil }
+                return (space.id, color)
             })
-        return (backgrounds, sidebarBranding.foregroundTone(over: windowEnvironment.colorScheme))
     }
 
     private func overflowButton(forward: Bool, reader: ScrollViewProxy) -> some View {
